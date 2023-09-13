@@ -88,7 +88,7 @@ def download_models():
 
 def clear_comfy_args():
     argv = sys.argv
-    sys.argv = [sys.argv[0], '--disable-smart-memory']
+    sys.argv = [sys.argv[0], '--disable-smart-memory', '--disable-cuda-malloc']
     import comfy.cli_args
     sys.argv = argv
 

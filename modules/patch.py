@@ -73,32 +73,33 @@ def sdxl_encode_adm_patched(self, **kwargs):
 def text_encoder_device_patched():
     # Fooocus's style system uses text encoder much more times than comfy so GPU makes things much faster.
     # But CPU seems to provide better results ...
-    return torch.device('cpu')  # comfy.model_management.get_torch_device()
+    return comfy.model_management.get_torch_device()
+    # return torch.device('cpu')
 
 
-def sd_clip_init_patched(self, target=None, embedding_directory=None, no_init=False):
-    if no_init:
-        return
-    params = target.params.copy()
-    clip = target.clip
-    tokenizer = target.tokenizer
-
-    load_device = comfy.model_management.text_encoder_device()
-    offload_device = comfy.model_management.text_encoder_offload_device()
-    params['device'] = offload_device
-    params['dtype'] = torch.float32  # always use float32 for consistent result to before
-
-    self.cond_stage_model = clip(**(params))
-
-    self.tokenizer = tokenizer(embedding_directory=embedding_directory)
-    self.patcher = comfy.model_patcher.ModelPatcher(self.cond_stage_model, load_device=load_device,
-                                                    offload_device=offload_device)
-    self.layer_idx = None
+# def sd_clip_init_patched(self, target=None, embedding_directory=None, no_init=False):
+#     if no_init:
+#         return
+#     params = target.params.copy()
+#     clip = target.clip
+#     tokenizer = target.tokenizer
+#
+#     load_device = comfy.model_management.text_encoder_device()
+#     offload_device = comfy.model_management.text_encoder_offload_device()
+#     params['device'] = offload_device
+#     params['dtype'] = torch.float32  # always use float32 for consistent result to before
+#
+#     self.cond_stage_model = clip(**(params))
+#
+#     self.tokenizer = tokenizer(embedding_directory=embedding_directory)
+#     self.patcher = comfy.model_patcher.ModelPatcher(self.cond_stage_model, load_device=load_device,
+#                                                     offload_device=offload_device)
+#     self.layer_idx = None
 
 
 def patch_all():
     comfy.model_management.DISABLE_SMART_MEMORY = True
-    # comfy.model_management.text_encoder_device = text_encoder_device_patched  # This is only needed when GPU is applied
-    comfy.sd.CLIP.__init__ = sd_clip_init_patched
+    comfy.model_management.text_encoder_device = text_encoder_device_patched
+    # comfy.sd.CLIP.__init__ = sd_clip_init_patched
     comfy.k_diffusion.external.DiscreteEpsDDPMDenoiser.forward = patched_discrete_eps_ddpm_denoiser_forward
     comfy.model_base.SDXL.encode_adm = sdxl_encode_adm_patched
