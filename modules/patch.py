@@ -71,8 +71,9 @@ def sdxl_encode_adm_patched(self, **kwargs):
 
 
 def text_encoder_device_patched():
-    # Fooocus's style system uses text encoder much more times than comfy so this makes things much faster.
-    return comfy.model_management.get_torch_device()
+    # Fooocus's style system uses text encoder much more times than comfy so GPU makes things much faster.
+    # But CPU seems to provide better results ...
+    return torch.device('cpu')  # comfy.model_management.get_torch_device()
 
 
 def sd_clip_init_patched(self, target=None, embedding_directory=None, no_init=False):
@@ -97,7 +98,7 @@ def sd_clip_init_patched(self, target=None, embedding_directory=None, no_init=Fa
 
 def patch_all():
     comfy.model_management.DISABLE_SMART_MEMORY = True
-    comfy.model_management.text_encoder_device = text_encoder_device_patched
+    # comfy.model_management.text_encoder_device = text_encoder_device_patched  # This is only needed when GPU is applied
     comfy.sd.CLIP.__init__ = sd_clip_init_patched
     comfy.k_diffusion.external.DiscreteEpsDDPMDenoiser.forward = patched_discrete_eps_ddpm_denoiser_forward
     comfy.model_base.SDXL.encode_adm = sdxl_encode_adm_patched
