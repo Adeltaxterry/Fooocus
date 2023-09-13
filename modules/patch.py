@@ -10,7 +10,6 @@ from comfy.k_diffusion import utils
 
 
 sharpness = 2.0
-
 cfg_x0 = 0.0
 cfg_s = 1.0
 
@@ -75,6 +74,7 @@ def text_encoder_device_patched():
 
 
 def patch_all():
+    comfy.model_management.DISABLE_SMART_MEMORY = True
     comfy.model_management.text_encoder_device = text_encoder_device_patched
     comfy.k_diffusion.external.DiscreteEpsDDPMDenoiser.forward = patched_discrete_eps_ddpm_denoiser_forward
     comfy.model_base.SDXL.encode_adm = sdxl_encode_adm_patched
