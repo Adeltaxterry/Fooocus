@@ -9,7 +9,7 @@ import comfy.utils
 
 from comfy.sd import load_checkpoint_guess_config
 from nodes import VAEDecode, EmptyLatentImage
-from comfy.sample import prepare_mask, broadcast_cond, load_additional_models, cleanup_additional_models
+from comfy.sample import prepare_mask, broadcast_cond, get_additional_models, cleanup_additional_models
 from modules.samplers_advanced import KSampler, KSamplerWithRefiner
 from modules.patch import patch_all
 
@@ -89,10 +89,10 @@ def get_previewer(device, latent_format):
 def ksampler(model, positive, negative, latent, seed=None, steps=30, cfg=7.0, sampler_name='dpmpp_2m_sde_gpu',
              scheduler='karras', denoise=1.0, disable_noise=False, start_step=None, last_step=None,
              force_full_denoise=False, callback_function=None):
-    # SCHEDULERS = ["normal", "karras", "exponential", "simple", "ddim_uniform"]
+    # SCHEDULERS = ["normal", "karras", "exponential", "sgm_uniform", "simple", "ddim_uniform"]
     # SAMPLERS = ["euler", "euler_ancestral", "heun", "dpm_2", "dpm_2_ancestral",
     #             "lms", "dpm_fast", "dpm_adaptive", "dpmpp_2s_ancestral", "dpmpp_sde", "dpmpp_sde_gpu",
-    #             "dpmpp_2m", "dpmpp_2m_sde", "dpmpp_2m_sde_gpu", "ddim", "uni_pc", "uni_pc_bh2"]
+    #             "dpmpp_2m", "dpmpp_2m_sde", "dpmpp_2m_sde_gpu", "dpmpp_3m_sde", "dpmpp_3m_sde_gpu", "ddim", "uni_pc", "uni_pc_bh2"]
 
     seed = seed if isinstance(seed, int) else random.randint(1, 2 ** 64)
 
@@ -127,7 +127,10 @@ def ksampler(model, positive, negative, latent, seed=None, steps=30, cfg=7.0, sa
     if noise_mask is not None:
         noise_mask = prepare_mask(noise_mask, noise.shape, device)
 
-    comfy.model_management.load_model_gpu(model)
+    models, inference_memory = get_additional_models(positive, negative, model.model_dtype())
+    comfy.model_management.load_models_gpu(
+        [model] + models,
+        comfy.model_management.batch_area_memory(noise.shape[0] * noise.shape[2] * noise.shape[3]) + inference_memory)
     real_model = model.model
 
     noise = noise.to(device)
@@ -135,8 +138,6 @@ def ksampler(model, positive, negative, latent, seed=None, steps=30, cfg=7.0, sa
 
     positive_copy = broadcast_cond(positive, noise.shape[0], device)
     negative_copy = broadcast_cond(negative, noise.shape[0], device)
-
-    models = load_additional_models(positive, negative, model.model_dtype())
 
     sampler = KSampler(real_model, steps=steps, device=device, sampler=sampler_name, scheduler=scheduler,
                        denoise=denoise, model_options=model.model_options)
@@ -161,10 +162,10 @@ def ksampler_with_refiner(model, positive, negative, refiner, refiner_positive, 
                           seed=None, steps=30, refiner_switch_step=20, cfg=7.0, sampler_name='dpmpp_2m_sde_gpu',
                           scheduler='karras', denoise=1.0, disable_noise=False, start_step=None, last_step=None,
                           force_full_denoise=False, callback_function=None):
-    # SCHEDULERS = ["normal", "karras", "exponential", "simple", "ddim_uniform"]
+    # SCHEDULERS = ["normal", "karras", "exponential", "sgm_uniform", "simple", "ddim_uniform"]
     # SAMPLERS = ["euler", "euler_ancestral", "heun", "dpm_2", "dpm_2_ancestral",
     #             "lms", "dpm_fast", "dpm_adaptive", "dpmpp_2s_ancestral", "dpmpp_sde", "dpmpp_sde_gpu",
-    #             "dpmpp_2m", "dpmpp_2m_sde", "dpmpp_2m_sde_gpu", "ddim", "uni_pc", "uni_pc_bh2"]
+    #             "dpmpp_2m", "dpmpp_2m_sde", "dpmpp_2m_sde_gpu", "dpmpp_3m_sde", "dpmpp_3m_sde_gpu", "ddim", "uni_pc", "uni_pc_bh2"]
 
     seed = seed if isinstance(seed, int) else random.randint(1, 2 ** 64)
 
@@ -199,7 +200,8 @@ def ksampler_with_refiner(model, positive, negative, refiner, refiner_positive, 
     if noise_mask is not None:
         noise_mask = prepare_mask(noise_mask, noise.shape, device)
 
-    comfy.model_management.load_model_gpu(model)
+    models, inference_memory = get_additional_models(positive, negative, model.model_dtype())
+    comfy.model_management.load_models_gpu([model] + models, comfy.model_management.batch_area_memory(noise.shape[0] * noise.shape[2] * noise.shape[3]) + inference_memory)
 
     noise = noise.to(device)
     latent_image = latent_image.to(device)
@@ -209,8 +211,6 @@ def ksampler_with_refiner(model, positive, negative, refiner, refiner_positive, 
 
     refiner_positive_copy = broadcast_cond(refiner_positive, noise.shape[0], device)
     refiner_negative_copy = broadcast_cond(refiner_negative, noise.shape[0], device)
-
-    models = load_additional_models(positive, negative, model.model_dtype())
 
     sampler = KSamplerWithRefiner(model=model, refiner_model=refiner, steps=steps, device=device,
                                   sampler=sampler_name, scheduler=scheduler,
