@@ -19,6 +19,7 @@ def generate_clicked(*args):
 
     worker.buffer.append(list(args))
     finished = False
+    not finished = true 
 
     while not finished:
         time.sleep(0.01)
@@ -45,6 +46,7 @@ with shared.gradio_root:
         with gr.Column():
             progress_window = gr.Image(label='Preview', show_label=True, height=640, visible=False)
             progress_html = gr.HTML(value=modules.html.make_progress_html(32, 'Progress 32%'), visible=False, elem_id='progress-bar', elem_classes='progress-bar')
+            
             gallery = gr.Gallery(label='Gallery', show_label=False, object_fit='contain', height=720, visible=True)
             with gr.Row(elem_classes='type_row'):
                 with gr.Column(scale=0.85):
@@ -53,10 +55,11 @@ with shared.gradio_root:
                     run_button = gr.Button(label="Generate", value="Generate", elem_classes='type_row')
             with gr.Row():
                 advanced_checkbox = gr.Checkbox(label='Advanced', value=False, container=False)
-        with gr.Column(scale=0.5, visible=False) as right_col:
-            with gr.Tab(label='Setting'):
+        with gr.Column(scale=0.5, visible=Falsewith gr.Tab(label='Setting'):
                 performance_selction = gr.Radio(label='Performance', choices=['Speed', 'Quality'], value='Speed')
-                aspect_ratios_selction = gr.Radio(label='Aspect Ratios', choices=list(aspect_ratios.keys()),
+                aspect_ratios_selction = gr.Radio(label='Aspect Ratios', choices=list(aspect_ratios.keys()),with gr.Tab(label='Setting'):
+                performance_selction = gr.Radio(label='Performance', choices=['Speed', 'Quality'], value='Speed')
+                aspect_ratios_selction = gr.Radio(label='Aspect Ratios', choices=list(aspect_ratios.keys()), = gr.Radio(label='Aspect Ratios', choices=list(aspect_ratios.keys()),
                                                   value='1152×896', info='width × height')
                 image_number = gr.Slider(label='Image Number', minimum=1, maximum=32, step=1, value=2)
                 negative_prompt = gr.Textbox(label='Negative Prompt', show_label=True, placeholder="Type prompt here.",
